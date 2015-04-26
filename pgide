@@ -1,0 +1,3 @@
+#!/bin/bash
+
+nw `dirname $0`/bin/pgide.nw
