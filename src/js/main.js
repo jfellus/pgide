@@ -14,7 +14,7 @@ function main(){
 		
 
 		
-		workbench.open("/home/jfellus/workspace/pg/demo/basic_vision.script.bak");
+		workbench.open("/home/jfellus/Bureau/ptcg.script");
 			
 		
 	} catch(err) {alert(err.stack ? err.stack : err);}

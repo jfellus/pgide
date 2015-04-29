@@ -1,3 +1,6 @@
 #!/bin/bash
 
-nw `dirname $0`/bin/pgide.nw
+F=`readlink -f $0`
+DIR=`dirname $F`
+cd $DIR
+nw --disable-setuid-sandbox ./bin/pgide.nw

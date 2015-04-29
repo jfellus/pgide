@@ -161,8 +161,6 @@ function create_workbench() {
 	};
 	
 	workbench.start = function() {
-		workbench.save();
-		workbench.compile();
 		cur_editor.start_model();
 	}
 	
@@ -207,7 +205,7 @@ function view_create_properties() {
 		e.empty();
 		if(cur_editor && cur_editor.has_selection()) {
 			var o = cur_editor.selection[0];
-			e.append(create_table_from_data(o.p, function(key, val) { cur_editor.set_selection_property(key, val);}));
+			e.append(create_table_from_data_plus(o.p, function(key, val) { cur_editor.set_selection_property(key, val);}));
 		}
 	};
 }

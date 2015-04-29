@@ -158,13 +158,19 @@ function Editor(filename) {
 			var _src = s.substring(0, s.indexOf("-")).trim();
 			var _dst = s.substring(s.indexOf(">")+1, s.length).trim();
 			var type = s.substring(s.indexOf("-")+1, s.indexOf(">"));
-			var src_pin = _src; if(src_pin.has(".")) {src_pin = src_pin.substring(src_pin.indexOf(".")+1,src_pin.length); _src = _src.substring(0, _src.indexOf("."));}
-			var dst_pin = _dst; if(dst_pin.has(".")) {dst_pin = dst_pin.substring(dst_pin.indexOf(".")+1,dst_pin.length); _dst = _dst.substring(0, _dst.indexOf("."));}
+			var src_pin = _src; 
+			if(src_pin.has(".")) {src_pin = src_pin.substring(src_pin.indexOf(".")+1,src_pin.length); _src = _src.substring(0, _src.indexOf("."));}
+			else src_pin = null;
+			var dst_pin = _dst; 
+			if(dst_pin.has(".")) {dst_pin = dst_pin.substring(dst_pin.indexOf(".")+1,dst_pin.length); _dst = _dst.substring(0, _dst.indexOf("."));}
+			else dst_pin = null;
 			var src = this.get_module_by_name(_src);
 			var dst = this.get_module_by_name(_dst);
 			if(!src) throw "No such module : " + _src;
 			if(!dst) throw "No such module : " + _dst;
 			this.cur_link = new Link(this, src, dst);
+			if(src_pin) this.cur_link.p.src_pin = src_pin;
+			if(dst_pin) this.cur_link.p.dst_pin = dst_pin;
 			this.cur_link.p.type = type;
 			this.cur_link.update();
 		} else {
@@ -221,6 +227,8 @@ function Editor(filename) {
 	/////////////////
 
 	this.compile_model = function(_on_done) {
+		cur_compilation_errors = " ";
+		workbench.open_view("Errors");
 		var on_done = _on_done;
 		var _editor = this;
 		var output = file_dirname(this.filename)+"/build_"+file_basename(this.filename);
@@ -230,19 +238,14 @@ function Editor(filename) {
 			else {
 				DBG("CPP Code for " + _editor.filename + " successfully generated to " + output +" !!");
 				exec_async("cd "+ output + ";make", function(err,stdout,stderr) {
-					if(stderr.length>0) _editor.report_compilation_errors(stderr);
-					else _editor.report_compilation_errors(cur_editor.filename + " successfully compiled in " + output +" !!");
-					
+					cur_compilation_errors = stderr;
+					workbench.open_view("Errors");
 					if(on_done) on_done();
 				});
 			}
 		});
 	};
 	
-	this.report_compilation_errors = function(err) {
-		cur_compilation_errors = err;
-		workbench.open_view("Errors");
-	};
 
 	
 	
@@ -251,8 +254,10 @@ function Editor(filename) {
 	///////////////
 	
 	this.start_model = function() {
+		cur_console = "";
 		var _editor = this;
 		this.compile_model(function() {
+			workbench.open_view("Console");
 			var output = file_dirname(_editor.filename)+"/build_"+file_basename(_editor.filename);
 			exec_async("cd "+ output + "; ./main", function(err, stdout, stderr) {
 				 _editor.report_console(stderr, stdout);

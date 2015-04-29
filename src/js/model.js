@@ -71,7 +71,10 @@ function Module(editor, x,y,type, name) {
 		if(key=="x") this.elt.set_pos(parseFloat(val), this.p.y);
 		else if(key=="y") this.elt.set_pos(this.p.x,parseFloat(val));
 		else if(key=="name") this.elt.set_text(this.p.name = val);
-		else this.p[key] = val;
+		else {
+			if(!val) delete this.p[key];
+			this.p[key] = val;
+		}
 		editor.set_modified(true);
 	};
 	
@@ -150,14 +153,25 @@ function Link(editor, src,dst) {
 	this.set_property = function(key, val) {
 		if(key=="src") {
 			var m = editor.get_module_by_name(val);
-			if(m) {	this.src = m; this.p.src = this.src.p.name;}
+			if(m) {	
+				this.src.outs.remove(this);
+				this.src = m; this.p.src = this.src.p.name;
+				this.src.outs.add(this);
+			}
 			else {alert("No such module : " + val);	}
 		} else if(key=="dst") {
 			var m = editor.get_module_by_name(val);
-			if(m) {this.dst = m; this.p.dst = this.dst.p.name;} 
+			if(m) {
+				this.dst.ins.remove(this);
+				this.dst = m; this.p.dst = this.dst.p.name;
+				this.dst.ins.add(this);
+			} 
 			else {alert("No such module : " + val);}
 		}
-		else this.p[key] = val;
+		else {
+			if(!val) delete this.p[key];
+			else this.p[key] = val;
+		}
 		this.update();
 		editor.set_modified(true);
 	};
@@ -172,7 +186,8 @@ function Script(filename) {
 	this.p = {name:file_basename(filename).replace("\\..*", ""), depends:[]};
 	
 	this.set_property = function(key, val) {
-		this.p[key] = val;
+		if(!val) delete this.p[key];
+		else this.p[key] = val;
 		this.update();
 	};
 	
