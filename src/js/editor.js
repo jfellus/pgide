@@ -75,6 +75,13 @@ function Editor(filename) {
 		for(var i = 0; i<this.links.length; i++) this.links[i].select();
 	};
 
+	this.select_rectangle = function(x,y,w,h) {
+		this.unselect_all();
+		for(var i = 0; i<this.modules.length; i++) {
+			if(this.modules[i].is_in(x,y,w,h)) this.modules[i].select();
+		}
+	}
+	
 	this.has_selection = function() {return this.selection.length>0;};
 
 	this.get_selected_module = function() {
@@ -98,6 +105,12 @@ function Editor(filename) {
 		while(this.selection.length>0) this.selection[0].remove();
 	}
 	
+	this.dragg_selection = function(dx,dy) {
+		for(var i = 0; i < this.selection.length; i++) {
+			if(this.selection[i].elt.move) this.selection[i].elt.move(dx,dy);
+		}
+	}
+	
 	this.set_modified = function(bModified) { 
 		this.bModified = bModified; 
 		workbench.rtabs.set_title(this.id, (bModified ? "*" : "")+file_basename(this.filename));
@@ -113,6 +126,71 @@ function Editor(filename) {
 
 	this.update = function() {};
 	
+	
+	this.update_all_svg = function() {
+		for(var i = 0; i<this.modules.length; i++) {
+			this.modules[i].elt.update_svg(this.modules[i].p.type);
+		}
+	}
+	
+	this.align_selection = function() {
+		if(this.selection.length<=1) return;
+		
+		var minx=Number.MAX_VALUE, maxx=-Number.MAX_VALUE, miny=Number.MAX_VALUE; maxy=-Number.MAX_VALUE;
+		for(var i = 0; i<this.selection.length; i++) {
+			if(!this.selection[i].elt.move) continue;
+			if(this.selection[i].p.x < minx) minx = this.selection[i].p.x;
+			if(this.selection[i].p.x > maxx) maxx = this.selection[i].p.x;
+			if(this.selection[i].p.y < miny) miny = this.selection[i].p.y;
+			if(this.selection[i].p.y > maxy) maxy = this.selection[i].p.y;			
+		}
+		
+		if(maxx-minx > maxy-miny) this.align_selection_H(); else this.align_selection_V();
+	}
+	
+	this.align_selection_H = function() {
+		if(this.selection.length<=1) return;
+		
+		var min=Number.MAX_VALUE, max=-Number.MAX_VALUE;
+		var y=0;
+		var list = [];
+		for(var i = 0; i<this.selection.length; i++) {
+			if(!this.selection[i].elt.move) continue;
+			if(this.selection[i].p.x < min) min = this.selection[i].p.x;
+			if(this.selection[i].p.x > max) max = this.selection[i].p.x;
+			y += this.selection[i].p.y;
+			list.push({i:i,x:this.selection[i].p.x});
+		}
+		y/=list.length;
+		list.sort(function(a,b){return (a.x<b.x) ? -1 : 1;});
+		var dx = (max-min)/(list.length-1);
+		for(var j=0; j<list.length; j++) {
+			this.selection[list[j].i].set_pos(min, y);
+			min += dx;
+		}
+	}
+	
+	this.align_selection_V = function() {
+		if(this.selection.length<=1) return;
+		
+		var min=Number.MAX_VALUE, max=-Number.MAX_VALUE;
+		var x = 0;
+		var list = [];
+		for(var i = 0; i<this.selection.length; i++) {
+			if(!this.selection[i].elt.move) continue;
+			if(this.selection[i].p.y < min) min = this.selection[i].p.y;
+			if(this.selection[i].p.y > max) max = this.selection[i].p.y;
+			x+=this.selection[i].p.x;
+			list.push({i:i,y:this.selection[i].p.y});
+		}
+		x/=list.length;
+		list.sort(function(a,b){return (a.y<b.y) ? -1 : 1;});
+		var dy = (max-min)/(list.length-1);
+		for(var j=0; j<list.length; j++) {
+			this.selection[list[j].i].set_pos(x, min);
+			min += dy;
+		}
+	}
 
 	////////
 	// IO //
@@ -259,7 +337,7 @@ function Editor(filename) {
 		this.compile_model(function() {
 			workbench.open_view("Console");
 			var output = file_dirname(_editor.filename)+"/build_"+file_basename(_editor.filename);
-			exec_async("cd "+ output + "; ./main", function(err, stdout, stderr) {
+			exec_async("cd "+ output + "; gnome-terminal -x ./main", function(err, stdout, stderr) {
 				 _editor.report_console(stderr, stdout);
 			});
 		});

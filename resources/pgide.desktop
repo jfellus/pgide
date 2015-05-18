@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=PGIDE
+Exec=pgide %F
+Icon=/usr/share/icons/hicolor/48x48/apps/pgide-48x48.png
+Type=Application
+Categories=GNOME;GTK;Development;GUIDesigner;
+Terminal=false
+StartupNotify=true
+Comment=Graphical editor for PGCC scripts
+MimeType=pgcc/script;

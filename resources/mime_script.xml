@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+   <mime-type type="pgcc/script">
+     <comment>PGCC script</comment>
+     <glob pattern="*.script"/>
+   </mime-type>
+</mime-info>

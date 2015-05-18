@@ -9,9 +9,9 @@ function Module(editor, x,y,type, name) {
 	this.ins = [];
 	this.p = {x:x,y:y,name:name,type:type};
 	
-	this.elt = create_node(canvas, x,y,name);
+	this.elt = create_node(canvas, x,y,type,name);
 	this.elt.model = this;
-	this.elt.decorate(10,-10,_SVG("circle").attr("r", 4).attr("fill","red"));
+//	this.elt.decorate(10,-10,_SVG("circle").attr("r", 4).attr("fill","red"));
 	
 	
 	this.add_out = function(link) { this.outs.push(link); };
@@ -26,7 +26,7 @@ function Module(editor, x,y,type, name) {
 	};
 	
 	this.on_mousedown = function(e){ 
-		if(!e.shiftKey) editor.unselect_all(); 
+		if(!this.is_selected() && !e.shiftKey) editor.unselect_all(); 
 		this.select();	
 	};
 	
@@ -46,8 +46,15 @@ function Module(editor, x,y,type, name) {
 		return bb;
 	};
 	
+	this.is_in = function(x,y,w,h) {
+		var bb = this.getBBox();
+		return bb.x >= x && bb.y >= y && bb.x+bb.width <= x+w && bb.y+bb.height <= y+h;
+	}
+	
+	this.is_selected = function() {return editor.selection.has(this);}
+	
 	this.select = function() {
-		if(!editor.selection.has(this)) {
+		if(!this.is_selected()) {
 			editor.add_selection(this);
 			SVG_ADD_CLASS(this.elt, "selected");
 		}		
@@ -67,13 +74,16 @@ function Module(editor, x,y,type, name) {
 		editor.modules.remove(this);
 	}
 	
+	this.set_pos = function(x,y) {this.elt.set_pos(x,y);}
+	
 	this.set_property = function(key,val) {
-		if(key=="x") this.elt.set_pos(parseFloat(val), this.p.y);
-		else if(key=="y") this.elt.set_pos(this.p.x,parseFloat(val));
+		if(key=="x") this.set_pos(parseFloat(val), this.p.y);
+		else if(key=="y") this.set_pos(this.p.x,parseFloat(val));
 		else if(key=="name") this.elt.set_text(this.p.name = val);
+		else if(key=="type") this.elt.update_svg(this.p.type = val);
 		else {
 			if(!val) delete this.p[key];
-			this.p[key] = val;
+			else this.p[key] = val;
 		}
 		editor.set_modified(true);
 	};
@@ -156,7 +166,7 @@ function Link(editor, src,dst) {
 			if(m) {	
 				this.src.outs.remove(this);
 				this.src = m; this.p.src = this.src.p.name;
-				this.src.outs.add(this);
+				this.src.add_out(this);
 			}
 			else {alert("No such module : " + val);	}
 		} else if(key=="dst") {
@@ -164,7 +174,7 @@ function Link(editor, src,dst) {
 			if(m) {
 				this.dst.ins.remove(this);
 				this.dst = m; this.p.dst = this.dst.p.name;
-				this.dst.ins.add(this);
+				this.dst.add_in(this);
 			} 
 			else {alert("No such module : " + val);}
 		}
@@ -188,10 +198,27 @@ function Script(filename) {
 	this.set_property = function(key, val) {
 		if(!val) delete this.p[key];
 		else this.p[key] = val;
+		if(key=="depends") cur_editor.update_all_svg();
 		this.update();
 	};
 	
 	this.update = function() {
 		cur_editor.set_modified(true);
+	};
+	
+	this.resolve_dep_project = function(project) {
+		var f = execSync("pgcc_resolve_project "+project);
+		if(!f) throw "Can't resolve project " + project;
+		return ""+f;
+	};
+	
+	this.resolve = function(file) {
+		for(var i=0; i<this.p.depends.length; i++) {
+			var dep = this.p.depends[i];
+			if(!file_exists(dep)) dep = this.resolve_dep_project(dep);
+			var f = file_dirname(dep) + "/" + file;
+			if(file_exists(f)) return f;
+		}
+		return null;
 	};
 }
