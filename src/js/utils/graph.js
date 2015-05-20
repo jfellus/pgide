@@ -57,7 +57,8 @@ function create_node(canvas, x, y, type, text) {
 	node.set_pos = function(x,y) {
 		this.attr("x", x).attr("y", y);
 		this.attr("transform", "translate(" + x + ","+ y + ")");
-		if(this.model) this.model.on_move(x,y);
+		this.hasMoved = true;
+		this.model.on_move(x,y);
 	};
 	
 	node.set_text = function(text) {
@@ -69,6 +70,10 @@ function create_node(canvas, x, y, type, text) {
 		node_svg.remove();
 		node_svg = _NODE(type);
 		node.prepend(node_svg);
+	};
+	
+	node.reattach = function() {
+		canvas.maingroup.append(this);
 	};
 	
 	node.decorations = [];
@@ -94,12 +99,14 @@ function create_link(canvas) {
 		.mouseup(function(e) { if(link.model) {link.model.on_mouseup(e);}})
 		.mouseenter(function() {SVG_ADD_CLASS(link, "hover"); if(link.model) {link.model.on_mouseenter();}})
 		.mouseleave(function() {SVG_REMOVE_CLASS(link, "hover"); if(link.model) {link.model.on_mouseleave();}});
+	link.reattach = function() {canvas.maingroup.prepend(this);};
 	canvas.maingroup.prepend(link);
 	return link;
 }
 
 function create_link_end(canvas, link) {
 	var end = _SVG("path").attr("class", "end").attr("d", "M 0,0 L -10,-5 -10,5 Z");
+	end.reattach = function() {canvas.maingroup.prepend(this);};
 	canvas.maingroup.prepend(end);
 	return end;
 }

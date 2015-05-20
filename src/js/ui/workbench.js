@@ -49,7 +49,7 @@ function Workbench() {
 	this.toolbar.append($("<li/>").addClass("stop").click(function(){workbench.stop();}));
 
 	
-	status = this.status; dbg_elt = this.status;
+	dbg_elt = this.status;
 	this.divider = create_divider();
 	this.main.append(this.divider);
 	
@@ -68,8 +68,12 @@ function Workbench() {
 	this.rtabs.header.disableTextSelect();
 	this.ltabs.header.disableTextSelect();
 			
-	$(document).keydown(function(e){if(cur_canvas && !$(document.activeElement).attr('contentEditable') && !$(document.activeElement).is('input')) cur_canvas.keydown(e);	});
-	$(document).keypress(function(e){if(cur_canvas && !$(document.activeElement).attr('contentEditable') && !$(document.activeElement).is('input')) cur_canvas.keypress(e);});
+	$(document).keydown(function(e){
+		if(!$(document.activeElement).attr('contentEditable') && !$(document.activeElement).is('input')) workbench.on_keydown(e);	
+	});
+	$(document).keypress(function(e){
+		if(!$(document.activeElement).attr('contentEditable') && !$(document.activeElement).is('input')) workbench.on_keypress(e);
+	});
 	
 	
 	///////////////////
@@ -121,8 +125,9 @@ function Workbench() {
 
 	this.close = function() {
 		if(cur_editor) {
-			this.rtabs.close(cur_editor.get_id());
+			var id = cur_editor.get_id();
 			cur_editor = null;
+			this.rtabs.close(id);
 			this.open_view("Properties");
 			this.open_view("Script");
 		}
@@ -149,12 +154,7 @@ function Workbench() {
 	this.save = function(filename) {
 		if(!filename) filename = cur_editor.cur_file;
 		if(!filename) file_save_as_dialog(function(filename) { workbench.save(filename);}, "*.script");
-		else {
-			var content = cur_editor.write_model();
-			file_write(filename, content);
-			cur_editor.cur_file = filename;
-			cur_editor.set_filename(filename);
-		}
+		else cur_editor.save(filename);
 	};
 	
 	this.compile = function() {
@@ -165,6 +165,9 @@ function Workbench() {
 		cur_editor.start_model();
 	};
 	
+	this.undo = function() {cur_editor.undo();};
+	this.redo = function() {cur_editor.redo();};
+	
 	
 	
 	
@@ -173,24 +176,32 @@ function Workbench() {
 	//////////////////
 	
 	this.on_keydown = function(e) {
+		if(cur_editor && cur_editor.canvas.keydown(e)) return;
 		var k = String.fromCharCode(e.which);
 		if(e.ctrlKey) {
 			if(k=='W') this.close();
 			else if(k=='O') this.open();
 			else if(k=='N') this.new_document();
-			else if(k=='S') this.save();	
-			else if(k=='B') this.compile();
-		} else {
+			else if(cur_editor && k=='S') this.save();	
+			else if(cur_editor && k=='B') this.compile();
+			else if(cur_editor && k=='Z') {if(e.shiftKey) this.redo(); else this.undo();}
+		} else if(cur_editor){
 			if(k=='M') this.start_creator(new ModuleCreator());
 			else if(k=='L') this.start_creator(new LinkCreator());
 			else if(k=='A') cur_editor.align_selection();
-			else if(e.which==40 /* down */) cur_editor.dragg_selection(0,5);
-			else if(e.which==38 /* up */) cur_editor.dragg_selection(0,-5);
-			else if(e.which==37 /* left */) cur_editor.dragg_selection(-5,0);
-			else if(e.which==39 /* right */) cur_editor.dragg_selection(5,0);
+			else if(e.which==40 /* down */) cur_editor.move_selection(0,5);
+			else if(e.which==38 /* up */) cur_editor.move_selection(0,-5);
+			else if(e.which==37 /* left */) cur_editor.move_selection(-5,0);
+			else if(e.which==39 /* right */) cur_editor.move_selection(5,0);
 			else if(e.which==46 /* suppr */) this.delete_selection();
 		}
+		
 	};
+	
+	this.on_keypress = function(e) {
+		if(cur_editor) cur_editor.canvas.keypress(e);
+	};
+	
 }
 
 

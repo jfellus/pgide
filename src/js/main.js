@@ -18,6 +18,7 @@ function main(){
 		
 	//	workbench.open("/home/jfellus/Bureau/ptcg.script");
 		
+		workbench.open_view("Create");
 		workbench.open_view("plot");
 		
 	} catch(err) {alert(err.stack ? err.stack : err);}

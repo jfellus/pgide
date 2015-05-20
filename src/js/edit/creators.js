@@ -1,21 +1,24 @@
-function ModuleCreator() {
+function ModuleCreator(type) {
 	this.x = 0;
 	this.y = 0;
 	this.elt = null;
 	this.type = "?";
 	
-	this.name = "new_module";
-	for(var i=1; cur_editor.get_module_by_name(this.name); i++) this.name = "new_module_"+i;
+	if(ISDEF(type)) this.name = this.type = type;
+	else this.name = "new_module";
+	
+	for(var i=1; cur_editor.get_module_by_name(this.name); i++) this.name = this.type=="?" ? "new_module_"+i : this.type+"_"+i;
 	
 	this.start = function() {
 	};
 	
 	this.create = function() {
 		var m = new Module(cur_editor, this.x, this.y, this.type, this.name);
+		cur_editor.add_command(new CommandCreateModule(m));
 		m.select();
 		cur_editor.set_modified(true);
 		this.end();
-	}
+	};
 	
 	this.move = function(x,y) {
 		if(!this.elt) {
@@ -26,7 +29,7 @@ function ModuleCreator() {
 		this.x = x;
 		this.y = y;
 		this.elt.attr("transform", "translate(" +x+","+y+")");
-	}
+	};
 	
 	this.end = function() {
 		if(this.elt) this.elt.remove();
@@ -56,7 +59,7 @@ function LinkCreator() {
 			var r = {x:x,y:y,width:0,height:0};
 			update_link(this.link,this.link_end,this.src.getBBox(), r);
 		}
-	}
+	};
 	
 	this.create = function() {
 		if(!this.link) {
@@ -73,6 +76,7 @@ function LinkCreator() {
 			if(this.dst) {
 				var l = new Link(cur_editor, this.src, this.dst);
 				l.update();
+				cur_editor.add_command(new CommandCreateLink(l));
 				l.select();
 				cur_editor.set_modified(true);
 				this.end();

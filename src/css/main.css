@@ -255,8 +255,18 @@ table.divider .sep {
 
 table.props { height:auto; }
 table.props td { padding:3px; padding-left:5px; padding-right:6px; border-bottom:1px dashed #999999;}
+table.props tr:last-child > td { border-bottom:none;}
 table.props .key { font-weight:bold; width:1%; }
 table.props .val { background:white; }
+table.props button.add {	margin:0;
+	width:20px;
+	height:20px;
+	background:url('img/add.png') no-repeat center;
+	opacity:0.5;
+	border:none;
+}
+table.props button.add:hover { opacity:1;}
+table.props tr.plus, table.props tr.plus td { background:none; border-bottom:none;}
 
 
 .view_errors {  overflow:hidden; width:100%;}
@@ -269,16 +279,8 @@ table.props .val { background:white; }
 .view_console > pre.stdout { color:blue; font-size:12px; font-family:Verdana; font-weight:normal;}
 
 
-.view_script h3 { margin:5px; margin-top:16px; font-size:12px; background:#8888FF; padding:2px; border-radius:5px; padding-left:10px; color:white;}
-ul.editable_list {
-	border:1px solid #cccccc;
-	border-radius:4px;
-	margin:3px;
-	width:auto;
-}
+h3 { margin:5px; margin-top:16px; font-size:12px; background:#8888FF; padding:2px; border-radius:5px; padding-left:10px; color:white;}
 
-ul.editable_list li {border-bottom:1px dashed #cccccc; padding:2px; font-size:12px;}
-ul.editable_list li:last-child {border-bottom:none;}
 
 	
 
@@ -305,3 +307,77 @@ ul.editable_list li:last-child {border-bottom:none;}
   stroke: #000;
   shape-rendering: crispEdges;
 }
+
+
+/* Editable list */
+.editable_list {border:none;padding:4px;padding-top:0;}
+.editable_list>li.item {
+	vertical-align:middle;
+	display:inline-block;
+	float:none;
+	background:#d5d5d5;
+	color:#444444;
+	padding:2px;
+	padding-left:4px;padding-right:4px;
+	border-radius:4px;
+	margin:3px;
+	border:none;
+	top:0;left:0;
+}
+
+.editable_list .choices {
+	position:absolute;
+	display:none;
+	list-style-type:none;
+	overflow:hidden;
+	width:auto;
+	background:white;
+	float:none;
+	border:1px solid #888888;
+	box-shadow:2px 2px 4px #AAAAAA;
+}
+.editable_list .remove {
+	position:relative;
+	margin:0;padding:0;
+	width:14px; height:14px; margin-left:5px;
+	top:2px;
+	border:none;
+	background:url('img/remove.png') no-repeat center;
+	opacity:1;
+}
+.editable_list .remove:hover {opacity:0.5;}
+
+.editable_list .choices>li {}
+.editable_list .choices>li:hover {background:#0000FF;color:white;float:none;}
+.editable_list .choices>li.selected {color:#cccccc;}
+.editable_list .add {
+	vertical-align:middle;
+	display:inline-block;
+	float:none;
+	color:#444444;
+	border-radius:4px;
+	top:0;left:0;
+	margin:0;
+	width:20px;
+	height:20px;
+	background:url('img/add.png') no-repeat center;
+	opacity:0.5;
+	border:none;
+}
+.editable_list .add:hover { opacity:1; }
+
+
+.view_properties button { margin:0;  margin-top:-1px;padding:1px; opacity:0.5; border-radius:4px; margin-right:4px; float:right; border:0;  }
+.view_properties button.deny { background:none; color:#CC0000;}
+.view_properties button.allow { background:none; color:#009900;}
+.view_properties button.on { opacity:1; text-decoration:underline; font-weight:bold;}
+.view_properties button:hover { opacity:1; }
+.view_properties ul.targets li.item {background:#FF7777; color:white;}		
+.view_properties ul.targets.allow li.item {background:#99DD99;}		
+
+
+.view_create li {border-bottom:1px dotted #cccccc; padding:6px; cursor:hand;}
+.view_create li:hover {background:#ddddff; box-shadow:0 2px 4px #cccccc; color:#000099;}
+.view_create b {}
+.view_create p { color:#aaaaaa; font-size:10px; float:right;}
+.view_create pre { font-size:7px; display:none; }

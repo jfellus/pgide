@@ -21,8 +21,13 @@ function Editor(filename) {
 	this.create_canvas = function() {
 		var _editor = this;
 		var canvas = create_canvas();
-		$(window).resize(function() {canvas.update();});
-		workbench.add_rtab(this.id, null, file_basename(filename), canvas, function() {canvas.update();});
+
+		canvas.on_update = function() { cur_editor = _editor; _editor.update(); };
+
+		canvas.mousemove(function(e) {if(workbench.creator) workbench.creator.move(canvas.relX(e.offsetX), canvas.relY(e.offsetY));});
+		canvas.click(function(e) {if(workbench.creator) workbench.creator.create();});
+		
+		workbench.add_rtab(this.id, null, file_basename(filename), canvas, function() {_editor.focus();});
 		workbench.rtabs.close(function(id){
 			if(id!=_editor.id) return true;
 			if(_editor.bModified) {
@@ -34,24 +39,12 @@ function Editor(filename) {
 		canvas.parent().parent().css("overflow", "hidden");
 		canvas.parent().css("overflow", "hidden");
 		
-		canvas.start_edit_text = function(t) {
-			if(canvas.cur_edited_text) SVG_REMOVE_CLASS(t, "edit");
-			SVG_ADD_CLASS(t, "edit");
-			canvas.cur_edited_text = t;
-		}
-		canvas.end_edit_text = function() {
-			if(canvas.cur_edited_text) SVG_REMOVE_CLASS(canvas.cur_edited_text, "edit");
-			canvas.cur_edited_text = null;
-		}
-		canvas.keypress = function(e) { if(canvas.cur_edited_text) return on_text_keypress(e); };
-		canvas.keydown = function(e) { if(canvas.cur_edited_text) return on_text_keydown(e); workbench.on_keydown(e);};
-		var _this = this;
-		canvas.on_update = function() { cur_editor = _this; _this.update(); };
-
-		canvas.mousemove(function(e) {if(workbench.creator) workbench.creator.move(canvas.relX(e.offsetX), canvas.relY(e.offsetY));});
-		canvas.click(function(e) {if(workbench.creator) workbench.creator.create();});
-		this.canvas = canvas;
-		cur_canvas = canvas;
+		cur_canvas = this.canvas = canvas;
+	};
+	
+	this.focus = function() {
+		this.canvas.update();
+		workbench.open_view("Script");
 	};
 	
 	
@@ -80,7 +73,7 @@ function Editor(filename) {
 		for(var i = 0; i<this.modules.length; i++) {
 			if(this.modules[i].is_in(x,y,w,h)) this.modules[i].select();
 		}
-	}
+	};
 	
 	this.has_selection = function() {return this.selection.length>0;};
 
@@ -96,24 +89,70 @@ function Editor(filename) {
 
 
 	this.set_selection_property = function(key, val) {
+		var old = [];
 		for(var i = 0; i < this.selection.length; i++) {
-			this.selection[i].set_property(key, val);
+			old.push({what:this.selection[i],key:key,oldval:this.selection[i].p[key],newval:val});
+			this.selection[i].apply_property(key, val);
 		}
+		
+		this.add_command(new CommandSetProperty(old));
 	};
 	
 	this.delete_selection = function(key, val) {
-		while(this.selection.length>0) this.selection[0].remove();
-	}
+		if(!this.selection || !this.selection.length) return;
+		this.add_command(new CommandDelete(this.selection.slice ? this.selection.slice() : [this.selection]));
+		if(this.selection.slice) while(this.selection.length>0) this.selection[0].detach();
+		else this.selection.remove();
+	};
+	
+	this.move_selection = function(dx,dy) {
+		this.dragg_selection(dx,dy);
+		this.on_selection_moved();
+		workbench.open_view("Properties");
+	};
 	
 	this.dragg_selection = function(dx,dy) {
+		if(!this.drag_command_data) {
+			this.drag_command_data = [];
+			for(var i = 0; i < this.selection.length; i++) {
+				if(this.selection[i].elt.move) {
+					this.drag_command_data.push({what:this.selection[i],key:"x",oldval:this.selection[i].p.x});
+					this.drag_command_data.push({what:this.selection[i],key:"y",oldval:this.selection[i].p.y});
+				}
+			}
+		}
+		
 		for(var i = 0; i < this.selection.length; i++) {
 			if(this.selection[i].elt.move) this.selection[i].elt.move(dx,dy);
 		}
-	}
+	};
+	
+	this.on_selection_moved = function() {
+		if(this.drag_command_data) {
+			var j = 0;
+			for(var i = 0; i < this.selection.length; i++) {
+				if(this.selection[i].elt.move) {
+					this.drag_command_data[j*2].newval = this.selection[i].p.x;
+					this.drag_command_data[j*2+1].newval = this.selection[i].p.y;
+					j++;
+				}
+			}
+			this.add_command(new CommandSetProperty(this.drag_command_data));
+			this.drag_command_data = null;
+		}
+		this.set_modified(true); 
+	};
 	
 	this.set_modified = function(bModified) { 
 		this.bModified = bModified; 
 		workbench.rtabs.set_title(this.id, (bModified ? "*" : "")+file_basename(this.filename));
+	};
+	
+	this.clear = function() {
+		this.unselect_all();
+		this.modules=[];
+		this.links=[];
+		this.canvas.clear();
 	};
 	
 	this.set_filename = function(filename) {
@@ -122,7 +161,7 @@ function Editor(filename) {
 		var id = encode_editor_id(filename);
 		workbench.rtabs.change_id(this.id, id);
 		this.id = id;
-	}
+	};
 
 	this.update = function() {};
 	
@@ -131,7 +170,7 @@ function Editor(filename) {
 		for(var i = 0; i<this.modules.length; i++) {
 			this.modules[i].elt.update_svg(this.modules[i].p.type);
 		}
-	}
+	};
 	
 	this.align_selection = function() {
 		if(this.selection.length<=1) return;
@@ -142,11 +181,11 @@ function Editor(filename) {
 			if(this.selection[i].p.x < minx) minx = this.selection[i].p.x;
 			if(this.selection[i].p.x > maxx) maxx = this.selection[i].p.x;
 			if(this.selection[i].p.y < miny) miny = this.selection[i].p.y;
-			if(this.selection[i].p.y > maxy) maxy = this.selection[i].p.y;			
+			if(this.selection[i].p.y > maxy) maxy = this.selection[i].p.y;
 		}
 		
 		if(maxx-minx > maxy-miny) this.align_selection_H(); else this.align_selection_V();
-	}
+	};
 	
 	this.align_selection_H = function() {
 		if(this.selection.length<=1) return;
@@ -154,21 +193,27 @@ function Editor(filename) {
 		var min=Number.MAX_VALUE, max=-Number.MAX_VALUE;
 		var y=0;
 		var list = [];
+		var old = [];
 		for(var i = 0; i<this.selection.length; i++) {
 			if(!this.selection[i].elt.move) continue;
 			if(this.selection[i].p.x < min) min = this.selection[i].p.x;
 			if(this.selection[i].p.x > max) max = this.selection[i].p.x;
 			y += this.selection[i].p.y;
 			list.push({i:i,x:this.selection[i].p.x});
+			old.push({module:this.selection[i],oldx:this.selection[i].p.x,oldy:this.selection[i].p.y});
 		}
 		y/=list.length;
 		list.sort(function(a,b){return (a.x<b.x) ? -1 : 1;});
 		var dx = (max-min)/(list.length-1);
 		for(var j=0; j<list.length; j++) {
 			this.selection[list[j].i].set_pos(min, y);
+			old[j].newx = min;
+			old[j].newy = y;
 			min += dx;
 		}
-	}
+		
+		this.add_command(new CommandAlign(old));
+	};
 	
 	this.align_selection_V = function() {
 		if(this.selection.length<=1) return;
@@ -176,22 +221,55 @@ function Editor(filename) {
 		var min=Number.MAX_VALUE, max=-Number.MAX_VALUE;
 		var x = 0;
 		var list = [];
+		var old = [];
 		for(var i = 0; i<this.selection.length; i++) {
 			if(!this.selection[i].elt.move) continue;
 			if(this.selection[i].p.y < min) min = this.selection[i].p.y;
 			if(this.selection[i].p.y > max) max = this.selection[i].p.y;
 			x+=this.selection[i].p.x;
 			list.push({i:i,y:this.selection[i].p.y});
+			old.push({module:this.selection[i],oldx:this.selection[i].p.x,oldy:this.selection[i].p.y});
 		}
 		x/=list.length;
 		list.sort(function(a,b){return (a.y<b.y) ? -1 : 1;});
 		var dy = (max-min)/(list.length-1);
 		for(var j=0; j<list.length; j++) {
 			this.selection[list[j].i].set_pos(x, min);
+			old[j].newx = x;
+			old[j].newy = min;
 			min += dy;
 		}
-	}
+		
+		this.add_command(new CommandAlign(old));
+	};
 
+	
+	/////////////////
+	// UNDO - REDO //
+	/////////////////
+	
+	this.add_command = function(cmd) {
+		if(!ISDEF(this.commands)) {this.commands = []; this.iCommand = 0;}
+		this.commands = this.commands.slice(0,this.iCommand);
+		this.commands.push(cmd);
+		this.iCommand++;
+	};
+	
+	this.undo = function() {
+		if(!ISDEF(this.commands)) return;
+		if(this.iCommand<1) return;
+		this.iCommand--;
+		this.commands[this.iCommand].undo();
+	};
+	
+	this.redo = function() {
+		if(!ISDEF(this.commands)) return;
+		if(this.iCommand>=this.commands.length) return;
+		this.commands[this.iCommand].redo();
+		this.iCommand++;
+	};
+	
+	
 	////////
 	// IO //
 	////////
@@ -213,23 +291,23 @@ function Editor(filename) {
 		this.update();
 		this.set_modified(false);
 		workbench.open_view("Script");
-	}
+	};
 
 	this.execute_statement_header = function(s) {
 		if(s.startsWith("Script")) this.script.p.name = s.split(" ")[1].trim();
 		else if(s.startsWith("Depends")) {this.script.p.depends.push(s.split(" ")[1].trim());}
-	}
+	};
 
 	this.execute_statement_modules = function(s) {
-		if(!s.has("=")) this.cur_module = new Module(this, Math.random()*this.canvas.width(), Math.random()*this.canvas.height(), s.split(" ")[0].trim(), s.split(" ")[1].trim());
+		if(!s.has("=")) this.cur_module = new Module(this, Math.random()*this.canvas.width(), Math.random()*this.canvas.height(), s.split(" ")[0].trim(), s.split(" ")[1].trim(), s.split(" ").slice(2));
 		else {
 			if(!this.cur_module) throw "Syntax error : "+s;
 			var key = s.split("=")[0].trim();
 			var val = s.split("=")[1].trim();
 			if(key[0]=='@') key = key.substring(1,key.length); 
-			this.cur_module.set_property(key, val);
+			this.cur_module.apply_property(key, val);
 		}
-	}
+	};
 
 	this.execute_statement_links = function(s) {
 		if(!s.has("=")) {
@@ -253,10 +331,10 @@ function Editor(filename) {
 			this.cur_link.update();
 		} else {
 			if(!this.cur_link) throw "Syntax error : "+s;
-			this.cur_link.set_property(s.split("=")[0].trim(), s.split("=")[1].trim());
+			this.cur_link.apply_property(s.split("=")[0].trim(), s.split("=")[1].trim());
 		}
-	}
-
+	};
+	
 	this.write_model = function() {
 		var s = "Script " + this.script.p.name + "\n";
 		if(this.script.p.depends)
@@ -265,9 +343,14 @@ function Editor(filename) {
 		
 		s+="[Modules]\n";
 		for(var i =0;i<this.modules.length;i++) {
-			s+= this.modules[i].p.type + " " + this.modules[i].p.name + "\n";
+			s+= this.modules[i].p.type + " " + this.modules[i].p.name; 
+			if(this.modules[i].p.targets && this.modules[i].p.targets.length) {
+				s+= " " + (this.modules[i].p.bTargetModePositive ? "+" : "-") + this.modules[i].p.targets.join(" ");
+			}
+			s+= "\n";
 			for(var key in this.modules[i].p) {
 				if(!key.trim()) continue;
+				if(key=="targets" || key=="bTargetModePositive") continue;
 				if(key=="name" || key=="type") continue;
 				var k = (key=="x" || key=="y") ? "@"+key : key;
 				if(this.modules[i].p[key]) 
@@ -291,9 +374,19 @@ function Editor(filename) {
 			}
 			s+="\n";
 		}
-		this.set_modified(false);
 		return s;
 	};
+	
+	
+	this.save = function(filename) {
+		var content = this.write_model();
+		file_write(filename, content);
+		this.set_modified(false);
+		this.cur_file = filename;
+		this.set_filename(filename);
+	};
+	
+	
 	
 	this.get_id = function() {return this.id;};
 	
