@@ -366,14 +366,15 @@ h3 { margin:5px; margin-top:16px; font-size:12px; background:#8888FF; padding:2p
 }
 .editable_list .add:hover { opacity:1; }
 
-
-.view_properties button { margin:0;  margin-top:-1px;padding:1px; opacity:0.5; border-radius:4px; margin-right:4px; float:right; border:0;  }
+.view_properties { overflow:hidden; position:relative;}
+.view_properties button.deny, .view_properties button.allow { margin:0;  margin-top:-1px;padding:1px; opacity:0.5; border-radius:4px; margin-right:4px; float:right; border:0;  }
 .view_properties button.deny { background:none; color:#CC0000;}
 .view_properties button.allow { background:none; color:#009900;}
 .view_properties button.on { opacity:1; text-decoration:underline; font-weight:bold;}
 .view_properties button:hover { opacity:1; }
 .view_properties ul.targets li.item {background:#FF7777; color:white;}		
 .view_properties ul.targets.allow li.item {background:#99DD99;}		
+.view_properties button.browse_script { position:absolute; }
 
 
 .view_create li {border-bottom:1px dotted #cccccc; padding:6px; cursor:hand;}
@@ -381,3 +382,4 @@ h3 { margin:5px; margin-top:16px; font-size:12px; background:#8888FF; padding:2p
 .view_create b {}
 .view_create p { color:#aaaaaa; font-size:10px; float:right;}
 .view_create pre { font-size:7px; display:none; }
+

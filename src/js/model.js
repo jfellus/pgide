@@ -14,6 +14,7 @@ function Module(editor, x,y,type, name, targets) {
 	this.elt.model = this;
 //	this.elt.decorate(10,-10,_SVG("circle").attr("r", 4).attr("fill","red"));
 	
+	this.is_script = function() {return this.p.type.charAt(0)=='$';}
 	
 	this.add_out = function(link) { this.outs.push(link); };
 	this.add_in = function(link) { this.ins.push(link); };
@@ -32,11 +33,14 @@ function Module(editor, x,y,type, name, targets) {
 	
 	this.on_mouseup = function(e) {	
 		this.select();
-		if(this.elt.hasMoved) editor.on_selection_moved();
+		if(this.elt.hasMoved) { editor.on_selection_moved(); this.elt.hasMoved=false;}
 	};
 	
 	this.on_click = function(e) {canvas.focus();};
-	this.on_dblclick = function(e){DBG("DblClicked : " + this.toString());e.preventDefault(); e.stopPropagation();};
+	this.on_dblclick = function(e){
+		if(this.is_script()) workbench.open(this.p.type.substr(1));
+		e.preventDefault(); e.stopPropagation();
+	};
 	
 	this.update = function() {
 		for(var i=0; i<this.outs.length; i++) this.outs[i].update();
@@ -74,8 +78,8 @@ function Module(editor, x,y,type, name, targets) {
 		this.unselect();
 		this.detached_outs = this.outs.slice();
 		this.detached_ins = this.ins.slice();
-		while(this.outs.length>0) this.outs[0].remove();
-		while(this.ins.length>0) this.ins[0].remove();
+		while(this.outs.length>0) this.outs[0].detach();
+		while(this.ins.length>0) this.ins[0].detach();
 		this.elt.detach();
 		editor.modules.remove(this);
 		this.bAttached = false;

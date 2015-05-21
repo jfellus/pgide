@@ -4,10 +4,13 @@ function ModuleCreator(type) {
 	this.elt = null;
 	this.type = "?";
 	
-	if(ISDEF(type)) this.name = this.type = type;
+	if(ISDEF(type)) {
+		this.type = type;
+		this.name  = this.type.toLowerCase();
+	}
 	else this.name = "new_module";
 	
-	for(var i=1; cur_editor.get_module_by_name(this.name); i++) this.name = this.type=="?" ? "new_module_"+i : this.type+"_"+i;
+	for(var i=1; cur_editor.get_module_by_name(this.name); i++) this.name = this.type=="?" ? "new_module_"+i : this.type.toLowerCase()+"_"+i;
 	
 	this.start = function() {
 	};

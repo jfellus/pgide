@@ -2,6 +2,9 @@ var canvas = null;
 
 
 function resolve_node_svg(type) {
+	if(type=="FOR") return "../css/img/for.svg";
+	else if(type=="ENDFOR") return "../css/img/endfor.svg";
+	else if(type.charAt(0)=="$") return "../css/img/script.svg";
 	return cur_editor.script.resolve("svg/"+type+".svg");
 }
 
@@ -49,15 +52,15 @@ function create_node(canvas, x, y, type, text) {
 		var x = parseFloat(node.attr("x"));
 		var y = parseFloat(node.attr("y"));
 		x += dx/canvas._zoom; y += dy/canvas._zoom;
+		this.hasMoved = true;
 		node.set_pos(x,y);
-	}
+	};
 	
-	node.is_selected = function() {return SVG_HAS_CLASS(node, "selected");}
+	node.is_selected = function() {return SVG_HAS_CLASS(node, "selected");};
 	
 	node.set_pos = function(x,y) {
 		this.attr("x", x).attr("y", y);
 		this.attr("transform", "translate(" + x + ","+ y + ")");
-		this.hasMoved = true;
 		this.model.on_move(x,y);
 	};
 	

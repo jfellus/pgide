@@ -96,6 +96,7 @@ function Editor(filename) {
 		}
 		
 		this.add_command(new CommandSetProperty(old));
+		this.set_modified(true);
 	};
 	
 	this.delete_selection = function(key, val) {

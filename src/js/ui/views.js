@@ -9,7 +9,14 @@ function view_create_properties() {
 				e.addClass("view_properties");
 				
 				e.append("<h3>Properties</h3>");
-				e.append(create_table_from_data({type:o.p.type,name:o.p.name,x:o.p.x,y:o.p.y},  function(key, val) { cur_editor.set_selection_property(key, val);}));
+				var t = create_table_from_data({type:o.p.type,name:o.p.name,x:o.p.x,y:o.p.y},  function(key, val) { cur_editor.set_selection_property(key, val);});
+				t.css("position", "relative");
+				e.append(t);
+				var b = $("<button class='browse_script'>...</button>");
+				b.css("top",0);
+				b.css("left", t.width()-20);
+				b.click(function() {file_open_dialog(function(filename) { t.find("td:first-child:contains('type')").next().text("$"+filename); cur_editor.set_selection_property("type", "$"+filename);}, "*.script");});
+				t.append(b);
 				
 				e.append("<h3>Params</h3>");
 				e.append(create_table_from_data_plus(o.p, function(key, val) { cur_editor.set_selection_property(key, val);}, ["x", "y", "name", "type", "targets", "bTargetModePositive"]));
@@ -92,11 +99,15 @@ function view_create_create() {
 		var list = $("<ul></ul>");
 		e.append(list);
 		
+		list.declare_module = function(project, module, decl) {
+			var li = $("<li><b>"+module+"</b><p>(in "+project+")</p><pre>"+decl+"</pre></li>");
+			li.click(function() {workbench.start_creator(new ModuleCreator(module));});
+			list.append(li);
+		};
+		
 		list.add_module = function(project, module) {
 			exec_async("pgcc_module " + project + " " + module, function(err,stdout,stderr){
-				var li = $("<li><b>"+module+"</b><p>(in "+project+")</p><pre>"+stdout+"</pre></li>");
-				li.click(function() {workbench.start_creator(new ModuleCreator(module));});
-				list.append(li);
+				list.declare_module(project, module, stdout.toString());
 			});
 		};
 		
@@ -108,6 +119,11 @@ function view_create_create() {
 				}
 			});
 		};
+		
+		list.declare_module("core", "FOR");
+		list.declare_module("core", "ENDFOR");
+		list.declare_module("core", "In");
+		list.declare_module("core", "Out");
 		
 		var projects = cur_editor.script.p.depends;
 		for(var i = 0; i<projects.length; i++) list.add_project(projects[i]);

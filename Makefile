@@ -4,7 +4,7 @@ all: bin/pgide.nw
 bin:
 	mkdir -p bin
 	
-bin/pgide.nw: bin src/css/* src/html/* src/js/* src/js/utils/* src/js/ui/* src/js/edit/* src/js/lib/* src/package.json
+bin/pgide.nw: bin src/css/* src/css/img/* src/html/* src/js/* src/js/utils/* src/js/ui/* src/js/edit/* src/js/lib/* src/package.json
 	cd src; zip -r ../bin/pgide.nw .
 
 	
